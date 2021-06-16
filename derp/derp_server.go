@@ -34,6 +34,7 @@ import (
 	"go4.org/mem"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/time/rate"
 	"tailscale.com/disco"
 	"tailscale.com/metrics"
 	"tailscale.com/types/key"
@@ -116,6 +117,8 @@ type Server struct {
 	curClients               expvar.Int
 	curHomeClients           expvar.Int // ones with preferred
 	clientsReplaced          expvar.Int
+	clientsReplaceLimited    expvar.Int
+	clientsReplaceSleeping   expvar.Int
 	unknownFrames            expvar.Int
 	homeMovesIn              expvar.Int // established clients announce home server moves in
 	homeMovesOut             expvar.Int // established clients announce home server moves out
@@ -326,17 +329,30 @@ func (s *Server) initMetacert() {
 func (s *Server) MetaCert() []byte { return s.metaCert }
 
 // registerClient notes that client c is now authenticated and ready for packets.
-// If c's public key was already connected with a different connection, the prior one is closed.
-func (s *Server) registerClient(c *sclient) {
+//
+// If c's public key was already connected with a different
+// connection, the prior one is closed, unless it's fighting rapidly
+// with another client with the same key, in which case the returned
+// ok is false, and the caller should wait the provided duration
+// before trying again.
+func (s *Server) registerClient(c *sclient) (ok bool, d time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	old := s.clients[c.key]
 	if old == nil {
 		c.logf("adding connection")
 	} else {
-		s.clientsReplaced.Add(1)
-		c.logf("adding connection, replacing %s", old.remoteAddr)
-		go old.nc.Close()
+		// Take over the old rate limiter, discarding the one
+		// our caller just made.
+		c.replaceLimiter = old.replaceLimiter
+		if rr := c.replaceLimiter.Reserve(); rr.OK() {
+			s.clientsReplaced.Add(1)
+			c.logf("adding connection, replacing %s", old.remoteAddr)
+			go old.nc.Close()
+		} else {
+			s.clientsReplaceLimited.Add(1)
+			return false, rr.Delay()
+		}
 	}
 	s.clients[c.key] = c
 	s.clientsEver[c.key] = true
@@ -345,6 +361,7 @@ func (s *Server) registerClient(c *sclient) {
 	}
 	s.curClients.Add(1)
 	s.broadcastPeerStateChangeLocked(c.key, true)
+	return true, 0
 }
 
 // broadcastPeerStateChangeLocked enqueues a message to all watchers
@@ -464,6 +481,12 @@ func (s *Server) accept(nc Conn, brw *bufio.ReadWriter, remoteAddr string, connN
 		sendQueue:   make(chan pkt, perClientSendQueueDepth),
 		peerGone:    make(chan key.Public),
 		canMesh:     clientInfo.MeshKey != "" && clientInfo.MeshKey == s.meshKey,
+
+		// Allow kicking out previous connections once a
+		// minute, with a very high burst of 100.  Once a
+		// minute is less than the client's 2 minute
+		// inactivity timeout.
+		replaceLimiter: rate.NewLimiter(1.0/60, 100),
 	}
 	if c.canMesh {
 		c.meshUpdate = make(chan struct{})
@@ -472,7 +495,15 @@ func (s *Server) accept(nc Conn, brw *bufio.ReadWriter, remoteAddr string, connN
 		c.info = *clientInfo
 	}
 
-	s.registerClient(c)
+	for {
+		ok, d := s.registerClient(c)
+		if ok {
+			break
+		}
+		s.clientsReplaceSleeping.Add(1)
+		time.Sleep(d)
+		s.clientsReplaceSleeping.Add(-1)
+	}
 	defer s.unregisterClient(c)
 
 	err = s.sendServerInfo(bw, clientKey)
@@ -905,6 +936,11 @@ type sclient struct {
 	meshUpdate chan struct{}   // write request to write peerStateChange
 	canMesh    bool            // clientInfo had correct mesh token for inter-region routing
 
+	// replaceLimiter controls how quickly two connections with
+	// the same client key can kick each other off the server by
+	// taking over ownership of a key.
+	replaceLimiter *rate.Limiter
+
 	// Owned by run, not thread-safe.
 	br          *bufio.Reader
 	connectedAt time.Time
@@ -1304,6 +1340,8 @@ func (s *Server) ExpVar() expvar.Var {
 	m.Set("gauge_clients_remote", expvar.Func(func() interface{} { return len(s.clientsMesh) - len(s.clients) }))
 	m.Set("accepts", &s.accepts)
 	m.Set("clients_replaced", &s.clientsReplaced)
+	m.Set("clients_replace_limited", &s.clientsReplaceLimited)
+	m.Set("gauge_clients_replace_sleeping", &s.clientsReplaceSleeping)
 	m.Set("bytes_received", &s.bytesRecv)
 	m.Set("bytes_sent", &s.bytesSent)
 	m.Set("packets_dropped", &s.packetsDropped)
