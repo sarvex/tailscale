@@ -18,6 +18,7 @@ Currently based on {some authentication method}. Visit the [admin panel](https:/
     - [GET tailnet ACL](#tailnet-acl-get)
     - [POST tailnet ACL](#tailnet-acl-post): set ACL for a tailnet
     - [POST tailnet ACL preview](#tailnet-acl-preview-post): preview rule matches on an ACL for a resource
+	- [POST tailnet ACL validation](#tailnet-acl-validatation): run tests against the existing ACL.
   - [Devices](#tailnet-devices)
     - [GET tailnet devices](#tailnet-devices-get)
   - [DNS](#tailnet-dns)
@@ -363,42 +364,25 @@ Etag: "e0b2816b418b3f266309d94426ac7668ab3c1fa87798785bf82f1085cc2f6d9c"
 }
 ```
 
-<a name=tailnet-acl-post></a>
+<a name=tailnet-acl-preview-post></a>
 
-#### `POST /api/v2/tailnet/:tailnet/acl` - set ACL for a tailnet
+#### `POST /api/v2/tailnet/:tailnet/acl/preview` - preview rule matches on an ACL for a resource
 
-Sets the ACL for the given domain.
-HuJSON and JSON are both accepted inputs.
-An `If-Match` header can be set to avoid missed updates.
-
-Returns the updated ACL in JSON or HuJSON according to the `Accept` header on success. Otherwise, errors are returned for incorrectly defined ACLs, ACLs with failing tests on attempted updates, and mismatched `If-Match` header and ETag.
+Determines what rules match for a user on an ACL without saving the ACL to the server.
 
 ##### Parameters
 
-###### Headers
-`If-Match` - A request header. Set this value to the ETag header provided in an `ACL GET` request to avoid missed updates.
-
-`Accept` - Sets the return type of the updated ACL. Response is parsed `JSON` if `application/json` is explicitly named, otherwise HuJSON will be returned.
+###### Query Parameters
+`user` - A user's email. The provided ACL is queried with this user to determine which rules match.
 
 ###### POST Body
-
-The POST body should be a JSON or [HuJSON](https://github.com/tailscale/hujson#hujson---human-json) formatted JSON object.
-An ACL policy may contain the following top-level properties:
-
-* `Groups` - Static groups of users which can be used for ACL rules.
-* `Hosts` - Hostname aliases to use in place of IP addresses or subnets.
-* `ACLs` - Access control lists.
-* `TagOwners` - Defines who is allowed to use which tags.
-* `Tests` - Run on ACL updates to check correct functionality of defined ACLs.
-
-See https://tailscale.com/kb/1018/acls for more information on those properties.
+ACL JSON or HuJSON (see https://tailscale.com/kb/1018/acls)
 
 ##### Example
 ```
-POST /api/v2/tailnet/example.com/acl
-curl 'https://api.tailscale.com/api/v2/tailnet/example.com/acl' \
+POST /api/v2/tailnet/example.com/acl/preiew
+curl 'https://api.tailscale.com/api/v2/tailnet/example.com/acl?user=user1@example.com' \
   -u "tskey-yourapikey123:" \
-  -H "If-Match: \"e0b2816b418b3f266309d94426ac7668ab3c1fa87798785bf82f1085cc2f6d9c\""
   --data-binary '// Example/default ACLs for unrestricted connections.
 {
   // Declare tests to check functionality of ACL rules. User must be a valid user with registered machines.
@@ -424,41 +408,53 @@ curl 'https://api.tailscale.com/api/v2/tailnet/example.com/acl' \
 
 Response:
 ```
-// Example/default ACLs for unrestricted connections.
-{
-  // Declare tests to check functionality of ACL rules. User must be a valid user with registered machines.
-  "Tests": [
-    // {"User": "user1@example.com", "Allow": ["example-host-1:22"], "Deny": ["example-host-2:100"]},
-  ],
-  // Declare static groups of users beyond those in the identity service.
-  "Groups": {
-    "group:example": [ "user1@example.com", "user2@example.com" ],
-  },
-  // Declare convenient hostname aliases to use in place of IP addresses.
-  "Hosts": {
-    "example-host-1": "100.100.100.100",
-  },
-  // Access control lists.
-  "ACLs": [
-    // Match absolutely everything. Comment out this section if you want
-    // to define specific ACL restrictions.
-    { "Action": "accept", "Users": ["*"], "Ports": ["*:*"] },
-  ]
-}
+{"matches":[{"users":["*"],"ports":["*:*"],"lineNumber":19}],"user":"user1@example.com"}
 ```
 
+<a name=tailnet-acl-validation></a>
+
+#### `POST /api/v2/tailnet/:tailnet/acl/validate` - run tests against the ACL
+
+Runs the provided ACLTests against the existing ACL without modifying the ACL.
+
+##### Parameters
+
+###### POST Body
+
+The POST body should be a JSON formatted array of ACL Tests.
+
+
+See https://tailscale.com/kb/1018/acls for more information on the format of ACL tests.
+
+##### Example
+```
+POST /api/v2/tailnet/example.com/acl
+curl 'https://api.tailscale.com/api/v2/tailnet/example.com/acl' \
+  -u "tskey-yourapikey123:" \
+  --data-binary '
+{
+  [
+     {"User": "user1@example.com", "Allow": ["example-host-1:22"], "Deny": ["example-host-2:100"]}
+  ]
+}'
+```
+
+Response:
+If all the tests pass, the response will be empty, with an http status code of 200.
+
 Failed test error response:
+A 200 http status code and the errors in the response body.  
 ```
 {
-    "message": "test(s) failed",
-    "data": [
-        {
-            "user": "user1@example.com",
-            "errors": [
-                "address \"user2@example.com:400\": want: Accept, got: Drop"
-            ]
-        }
-    ]
+	{
+		"message":"test(s) failed",
+		"data":[
+					{
+						"user":"user1@example.com",
+						"errors":["address \"2.2.2.2:22\": want: Drop, got: Accept"]
+					}
+			   ],
+	}
 }
 ```
 
