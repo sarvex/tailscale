@@ -11,7 +11,7 @@ const (
 )
 
 // DIV takes two int64 divides the two and returns a float64
-func DIV(x int64, y int64) float64 {
+func DIV(x, y int64) float64 {
 	if y == 0 {
 		return 0
 	}
@@ -19,6 +19,6 @@ func DIV(x int64, y int64) float64 {
 }
 
 // DIFF takes the difference between two uint32s and returns int32
-func DIFF(x uint32, y uint32) int32 {
-	return int32(uint32(x) - uint32(y))
+func DIFF(x, y uint32) int32 {
+	return int32(int64(x) - int64(y))
 }

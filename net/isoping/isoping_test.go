@@ -21,21 +21,36 @@ func sigDigs(x float64, digs int) float64 {
 // the C implementation of this function.
 func TestOnepass_stddev(t *testing.T) {
 	t.Parallel()
+	tests := []struct {
+		name  string
+		input []int64
+		out   float64
+	}{
 
-	answer := sigDigs(onepass_stddev(12, 2, 3), 6)
-	expected := 2.309401
-	answer2 := sigDigs(onepass_stddev(12023232232, 212, 321), 6)
-	expected2 := 6129.649279
-	if answer != expected {
-		t.Errorf("got %v, expected %v", answer, expected)
+		{
+			name:  "basic1",
+			input: []int64{12, 2, 3},
+			out:   2.309401,
+		},
+		{
+
+			name:  "basic2",
+			input: []int64{12023232232, 212, 321},
+			out:   6129.649279,
+		},
 	}
-	if answer2 != expected2 {
-		t.Errorf("got %v, expected %v", answer2, expected2)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ttAns := sigDigs(onePassStddev(tt.input[0], tt.input[1], tt.input[2]), 6)
+			if ttAns != tt.out {
+				t.Errorf("got %v, expected %v", ttAns, tt.out)
+			}
+		})
 	}
+
 }
 
 // TestUstimeCast tests if casting was correct
-// sanity check, probably will be removed for redundancy
 func TestUstimeCast(t *testing.T) {
 	t.Parallel()
 
@@ -50,11 +65,11 @@ func TestUstimeCast(t *testing.T) {
 // The size and the Magic number field that needs to be equal.
 // This mocks the initial packet sent in Isoping.
 func TestValidInitialPacket(t *testing.T) {
-	client := Isoping{IsServer: false}
-	client.Start("[::]:4948")
+	client := NewInstance()
+	client.Start([]string{":4948"})
 
-	server := Isoping{IsServer: true}
-	server.Start()
+	server := NewInstance()
+	server.Start([]string{})
 	defer server.Conn.Close()
 
 	buf, err := client.generateInitialPacket()
@@ -68,7 +83,7 @@ func TestValidInitialPacket(t *testing.T) {
 		t.Error(err)
 	}
 
-	got, rxaddr, err := server.Conn.ReadFromUDP(p)
+	got, _, err := server.Conn.ReadFromUDP(p)
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,20 +99,4 @@ func TestValidInitialPacket(t *testing.T) {
 	if got != binary.Size(server.Rx) || server.Rx.Magic != MAGIC {
 		t.Error("received Rx is not proper")
 	}
-
-	t.Logf("Proper Packet received from %v\n", rxaddr)
-}
-
-func TestMainLoop(t *testing.T) {
-	server := Isoping{}
-	server.Start()
-	defer server.Conn.Close()
-	server.MainLoop()
-}
-
-func TestStartClient(t *testing.T) {
-	client := Isoping{}
-	client.Start("[::]:4948")
-	defer client.Conn.Close()
-	client.MainLoop()
 }
