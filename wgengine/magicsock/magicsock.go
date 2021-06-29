@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/nacl/box"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"golang.zx2c4.com/wireguard/conn"
 	"inet.af/netaddr"
@@ -979,19 +980,8 @@ func (c *Conn) goDerpConnect(node int) {
 //
 // c.mu must NOT be held.
 func (c *Conn) determineEndpoints(ctx context.Context) ([]tailcfg.Endpoint, error) {
-	nr, err := c.updateNetInfo(ctx)
-	if err != nil {
-		c.logf("magicsock.Conn.determineEndpoints: updateNetInfo: %v", err)
-		return nil, err
-	}
-
 	already := make(map[netaddr.IPPort]tailcfg.EndpointType) // endpoint -> how it was found
 	var eps []tailcfg.Endpoint                               // unique endpoints
-
-	ipp := func(s string) (ipp netaddr.IPPort) {
-		ipp, _ = netaddr.ParseIPPort(s)
-		return
-	}
 	addAddr := func(ipp netaddr.IPPort, et tailcfg.EndpointType) {
 		if ipp.IsZero() || (debugOmitLocalAddresses && et == tailcfg.EndpointLocal) {
 			return
@@ -1002,11 +992,37 @@ func (c *Conn) determineEndpoints(ctx context.Context) ([]tailcfg.Endpoint, erro
 		}
 	}
 
-	if ext, err := c.portMapper.CreateOrGetMapping(ctx); err == nil {
-		addAddr(ext, tailcfg.EndpointPortmapped)
-		c.setNetInfoHavePortMap()
-	} else if !portmapper.IsNoMappingError(err) {
-		c.logf("portmapper: %v", err)
+	eg, ctx := errgroup.WithContext(ctx)
+
+	// TODO does there need to be some more complexity here? I'm sure I'm missing something
+	eg.Go(func() error {
+		if ext, err := c.portMapper.CreateOrGetMapping(ctx); err == nil {
+			addAddr(ext, tailcfg.EndpointPortmapped)
+			c.setNetInfoHavePortMap()
+		} else if !portmapper.IsNoMappingError(err) {
+			c.logf("portmapper: %v", err)
+		}
+		return nil
+	})
+
+	var nr *netcheck.Report
+	eg.Go(func() error {
+		var err error
+		nr, err = c.updateNetInfo(ctx)
+		if err != nil {
+			c.logf("magicsock.Conn.determineEndpoints: updateNetInfo: %v", err)
+			return err
+		}
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	ipp := func(s string) (ipp netaddr.IPPort) {
+		ipp, _ = netaddr.ParseIPPort(s)
+		return
 	}
 
 	if nr.GlobalV4 != "" {
