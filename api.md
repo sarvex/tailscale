@@ -18,7 +18,7 @@ Currently based on {some authentication method}. Visit the [admin panel](https:/
     - [GET tailnet ACL](#tailnet-acl-get)
     - [POST tailnet ACL](#tailnet-acl-post): set ACL for a tailnet
     - [POST tailnet ACL preview](#tailnet-acl-preview-post): preview rule matches on an ACL for a resource
-	- [POST tailnet ACL validation](#tailnet-acl-validatation): run tests against the existing ACL.
+	- [POST tailnet ACL validation](#tailnet-acl-validation): run tests against the existing ACL.
   - [Devices](#tailnet-devices)
     - [GET tailnet devices](#tailnet-devices-get)
   - [DNS](#tailnet-dns)
@@ -423,18 +423,17 @@ Runs the provided ACLTests against the existing ACL without modifying the ACL.
 
 The POST body should be a JSON formatted array of ACL Tests.
 
-
 See https://tailscale.com/kb/1018/acls for more information on the format of ACL tests.
 
 ##### Example
 ```
-POST /api/v2/tailnet/example.com/acl
-curl 'https://api.tailscale.com/api/v2/tailnet/example.com/acl' \
+POST /api/v2/tailnet/example.com/acl/validate
+curl 'https://api.tailscale.com/api/v2/tailnet/example.com/acl/validate' \
   -u "tskey-yourapikey123:" \
   --data-binary '
 {
   [
-     {"User": "user1@example.com", "Allow": ["example-host-1:22"], "Deny": ["example-host-2:100"]}
+    {"User": "user1@example.com", "Allow": ["example-host-1:22"], "Deny": ["example-host-2:100"]}
   ]
 }'
 ```
@@ -446,15 +445,13 @@ Failed test error response:
 A 200 http status code and the errors in the response body.  
 ```
 {
-	{
-		"message":"test(s) failed",
-		"data":[
-					{
-						"user":"user1@example.com",
-						"errors":["address \"2.2.2.2:22\": want: Drop, got: Accept"]
-					}
-			   ],
-	}
+  "message":"test(s) failed",
+  "data":[
+           {
+             "user":"user1@example.com",
+             "errors":["address \"2.2.2.2:22\": want: Drop, got: Accept"]
+           }
+         ]
 }
 ```
 
