@@ -26,12 +26,12 @@ func TestDownload(t *testing.T) {
 	}
 	listener := l.(*net.TCPListener)
 
-	serverIP := "127.0.0.1"
 	_, serverPort, err := net.SplitHostPort(l.Addr().String())
 	if err != nil {
 		t.Fatal("cannot get the port: ", err)
 	}
 	t.Log("port found:", serverPort)
+	serverIP := "127.0.0.1:" + string(serverPort)
 
 	type state struct {
 		err error
@@ -45,7 +45,7 @@ func TestDownload(t *testing.T) {
 	})()
 
 	go (func() {
-		results, err := RunClient(time.Second*time.Duration(MinNumSeconds), serverIP, serverPort)
+		results, err := RunClient(DefaultDuration, serverIP)
 		if err != nil {
 			fmt.Println("client died")
 			stateChan <- state{err: err}
