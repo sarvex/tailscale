@@ -104,7 +104,7 @@ func handleConnection(conn *net.TCPConn, testStateChan chan TestState) {
 // and the connection is closed. This function returns an error if the write fails, as well as a
 // slice of results that contains the result of the test.
 func runTestS(conn *net.TCPConn, config TestConfig) ([]Result, error) {
-	BufData := make([]byte, lenBufData)
+	BufData := make([]byte, blockSize)
 	sum := 0
 	totalSum := 0
 
@@ -134,9 +134,8 @@ func runTestS(conn *net.TCPConn, config TestConfig) ([]Result, error) {
 		sum = sum + n
 		if currentTime.After(lastCalculated.Add(time.Second * time.Duration(increment))) {
 			interval := currentTime.Sub(lastCalculated)
-			result := getResult(sum, interval, false)
-			if result != nil {
-				results = append(results, *result)
+			if interval > minInterval {
+				results = append(results, Result{Bytes: sum, Interval: interval, Total: false})
 			}
 			lastCalculated = lastCalculated.Add(time.Duration(increment) * time.Second)
 			totalSum += sum
@@ -148,9 +147,8 @@ func runTestS(conn *net.TCPConn, config TestConfig) ([]Result, error) {
 		}
 
 	}
-	result := getResult(totalSum, currentTime.Sub(startTime), true)
-	if result != nil {
-		results = append(results, *result)
+	if currentTime.Sub(startTime) > minInterval {
+		results = append(results, Result{Bytes: totalSum, Interval: currentTime.Sub(startTime), Total: true})
 	}
 	return results, nil
 

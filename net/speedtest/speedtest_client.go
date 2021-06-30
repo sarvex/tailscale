@@ -47,7 +47,7 @@ func RunClient(duration time.Duration, host string) ([]Result, error) {
 // It has a loop that breaks if the connection recieves an IO error or if the server sends a header
 // with the "end" type. It reads the headers and data coming from the server and records the number of bytes recieved in each interval in a result slice.
 func runTestC(conn *net.TCPConn, config TestConfig) ([]Result, error) {
-	bufferData := make([]byte, lenBufData)
+	bufferData := make([]byte, blockSize)
 
 	sum := 0
 	totalSum := 0
@@ -79,11 +79,9 @@ func runTestC(conn *net.TCPConn, config TestConfig) ([]Result, error) {
 		// checks if the current time is more or equal to the lastCalculated time plus the increment
 		if currentTime.After(lastCalculated.Add(time.Second * time.Duration(increment))) {
 			interval := currentTime.Sub(lastCalculated)
-			result := getResult(sum, interval, false)
-			if result != nil {
-				results = append(results, *result)
+			if interval > minInterval {
+				results = append(results, Result{Bytes: sum, Interval: interval, Total: false})
 			}
-			//lastCalculated += increment
 			lastCalculated = currentTime
 			totalSum += sum
 			sum = 0
@@ -91,20 +89,19 @@ func runTestC(conn *net.TCPConn, config TestConfig) ([]Result, error) {
 
 	}
 
-	var result *Result
 	// get last segment
 	interval := currentTime.Sub(lastCalculated)
-	result = getResult(sum, interval, false)
-	if result != nil {
-		results = append(results, *result)
+	if interval > minInterval {
+		results = append(results, Result{Bytes: sum, Interval: interval, Total: false})
 	}
 
 	// get total
 	totalSum += sum
-	result = getResult(totalSum, currentTime.Sub(downloadBegin), true)
-	if result != nil {
-		results = append(results, *result)
+	interval = currentTime.Sub(downloadBegin)
+	if interval > minInterval {
+		results = append(results, Result{Bytes: totalSum, Interval: interval, Total: true})
 	}
+
 	return results, nil
 
 }

@@ -4,10 +4,12 @@
 
 // Program speedtest provides the speedtest command. The reason to keep it separate from
 // the normal tailscale cli is because it is not yet ready to go in the tailscale binary.
+// It will be included in the tailscale cli after it has been added to tailscaled.
 // Example usage for client command: go run cmd/speedtest -host 127.0.0.1:8080 -t 5s
 // This will connect to the server on 127.0.0.1:8080 and start a 5 second speedtestd.
 // Example usage for server command: go run cmd/speedtest -s -max-conns 1 -host :8080
-// This will start a speedtest server on port 8080 and allow only 1 concurrent connection at a time.
+// This will start a speedtest server on port 8080 and allow only 1 concurrent connection
+// at a time.
 package main
 
 import (
@@ -29,17 +31,23 @@ import (
 func main() {
 	args := os.Args[1:]
 	if err := speedtestCmd.Parse(args); err != nil {
-		fmt.Println(err)
+		os.Stderr.WriteString(err.Error())
 		os.Exit(1)
 	}
 
-	if err := speedtestCmd.Run(context.Background()); err != nil {
+	err := speedtestCmd.Run(context.Background())
+	if errors.Is(err, flag.ErrHelp) {
+		fmt.Println(speedtestCmd.ShortUsage)
+		os.Exit(2)
+	}
+	if err != nil {
 		os.Stderr.WriteString(err.Error())
 		os.Exit(1)
 	}
 }
 
-// Speedtest command that contains the server and client sub commands.
+// speedtestCmd is the root command. It runs either the server and client depending on the
+// flags passed to it.
 var speedtestCmd = &ffcli.Command{
 	Name:       "speedtest",
 	ShortUsage: "speedtest [-s] [-max-conns <max connections>] [-t <test duration>]",
@@ -48,7 +56,7 @@ var speedtestCmd = &ffcli.Command{
 		fs := flag.NewFlagSet("speedtest", flag.ExitOnError)
 		fs.StringVar(&speedtestArgs.host, "host", ":0", "host:port pair to connect to or listen on")
 		fs.IntVar(&speedtestArgs.maxConnections, "max-conns", 1, "max number of concurrent connections allowed")
-		fs.DurationVar(&speedtestArgs.testDuration, "t", speedtest.DefaultDuration, "The duration of the speed test in seconds")
+		fs.DurationVar(&speedtestArgs.testDuration, "t", speedtest.DefaultDuration, "duration of the speed test")
 		fs.BoolVar(&speedtestArgs.runServer, "s", false, "run a speedtest server")
 		return fs
 	})(),
@@ -79,7 +87,7 @@ func runSpeedtest(ctx context.Context, args []string) error {
 		resultsChan := make(chan []speedtest.Result, speedtestArgs.maxConnections)
 
 		// this goroutine would end when the commandline program ends
-		go (func() {
+		go func() {
 			for results := range resultsChan {
 				fmt.Println("Results:")
 				var d time.Duration
@@ -88,7 +96,7 @@ func runSpeedtest(ctx context.Context, args []string) error {
 					d += result.Interval
 				}
 			}
-		})()
+		}()
 
 		return speedtest.Serve(tcpListener, speedtestArgs.maxConnections, nil, resultsChan)
 	}

@@ -11,12 +11,14 @@ import (
 )
 
 const (
-	lenBufData      = 32000           // Size of the block of randomly generated data to send.
-	MinDuration     = 5 * time.Second // Default time for a test
-	DefaultDuration = MinDuration
-	MaxDuration     = 30 * time.Second
-	version         = 1
-	increment       = 1.0 // increment to display results for, in seconds
+	blockSize       = 32000                 // Size of the block of randomly generated data to send.
+	MinDuration     = 5 * time.Second       // minimum duration for a test.
+	DefaultDuration = MinDuration           // default duration for a test.
+	MaxDuration     = 30 * time.Second      // maximum duration for a test.
+	version         = 1                     // value used when comparing client and server versions.
+	increment       = 1.0                   // increment to display results for, in seconds.
+	minInterval     = 10 * time.Millisecond // minimum interval length for a result to be included.
+
 )
 
 // This is the initial message sent to the server, that contains information on how to
@@ -45,20 +47,6 @@ func (r Result) BytesPerSecond() float64 {
 
 func (r Result) BitsPerSecond() float64 {
 	return float64(r.Bytes) * 8.0 / r.Interval.Seconds()
-}
-
-// getResult returns a pointer to a result struct created using the parameters,
-// only if the interval is greater than 0.01 seconds.
-func getResult(sum int, interval time.Duration, total bool) *Result {
-	//return early if it's not worth displaying the data
-	if interval.Seconds() < 0.01 {
-		return nil
-	}
-	r := &Result{}
-	r.Bytes = sum
-	r.Interval = interval
-	r.Total = total
-	return r
 }
 
 // TestState is used by the server when checking the result of a test.
