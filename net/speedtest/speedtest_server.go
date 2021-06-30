@@ -104,9 +104,7 @@ func handleConnection(conn *net.TCPConn, testStateChan chan TestState) {
 // and the connection is closed. This function returns an error if the write fails, as well as a
 // slice of results that contains the result of the test.
 func runTestS(conn *net.TCPConn, config TestConfig) ([]Result, error) {
-	conn.SetWriteBuffer(LenBufData)
-
-	BufData := make([]byte, LenBufData)
+	BufData := make([]byte, lenBufData)
 	sum := 0
 	totalSum := 0
 

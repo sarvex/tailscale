@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	LenBufData    = 32000 // Size of the block of randomly generated data to send.
-	MinNumSeconds = 5     // Default time for a test
-	MaxNumSeconds = 30
-	version       = 1
-	increment     = 1.0 // increment to display results for, in seconds
+	lenBufData      = 32000           // Size of the block of randomly generated data to send.
+	MinDuration     = 5 * time.Second // Default time for a test
+	DefaultDuration = MinDuration
+	MaxDuration     = 30 * time.Second
+	version         = 1
+	increment       = 1.0 // increment to display results for, in seconds
 )
 
 // This is the initial message sent to the server, that contains information on how to
@@ -33,13 +34,17 @@ type TestConfigResponse struct {
 
 // This represents the Result of a speedtest within a specific interval
 type Result struct {
-	Bytes    int
-	Interval time.Duration
-	Total    bool
+	Bytes    int           // number of bytes sent/received during the interval
+	Interval time.Duration // duration of the interval
+	Total    bool          // if true, this result struct represents the entire test, rather than a segment of the test.
 }
 
 func (r Result) BytesPerSecond() float64 {
 	return float64(r.Bytes) / r.Interval.Seconds()
+}
+
+func (r Result) BitsPerSecond() float64 {
+	return float64(r.Bytes) * 8.0 / r.Interval.Seconds()
 }
 
 // getResult returns a pointer to a result struct created using the parameters,

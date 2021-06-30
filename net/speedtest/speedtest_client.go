@@ -17,8 +17,8 @@ import (
 // It returns any errors that come up in the tests.
 // It returns an error if the given test type isn't either download or upload.
 // If there are no errors in the test, it returns a slice of results.
-func RunClient(duration time.Duration, host, port string) ([]Result, error) {
-	c, err := net.Dial("tcp", net.JoinHostPort(host, port))
+func RunClient(duration time.Duration, host string) ([]Result, error) {
+	c, err := net.Dial("tcp", host)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func RunClient(duration time.Duration, host, port string) ([]Result, error) {
 // It has a loop that breaks if the connection recieves an IO error or if the server sends a header
 // with the "end" type. It reads the headers and data coming from the server and records the number of bytes recieved in each interval in a result slice.
 func runTestC(conn *net.TCPConn, config TestConfig) ([]Result, error) {
-	bufferData := make([]byte, LenBufData)
+	bufferData := make([]byte, lenBufData)
 
 	sum := 0
 	totalSum := 0
