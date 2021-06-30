@@ -77,11 +77,10 @@ func runSpeedtest(ctx context.Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		tcpListener := listener.(*net.TCPListener)
 
 		// If the user provides a 0 port, a random available port will be chosen,
 		// so we need to identify which one was chosen, to display to the user.
-		port := tcpListener.Addr().(*net.TCPAddr).Port
+		port := listener.Addr().(*net.TCPAddr).Port
 		fmt.Println("listening on port", port)
 
 		resultsChan := make(chan []speedtest.Result, speedtestArgs.maxConnections)
@@ -98,7 +97,7 @@ func runSpeedtest(ctx context.Context, args []string) error {
 			}
 		}()
 
-		return speedtest.Serve(tcpListener, speedtestArgs.maxConnections, nil, resultsChan)
+		return speedtest.Serve(listener, speedtestArgs.maxConnections, nil, resultsChan)
 	}
 
 	if speedtestArgs.host == "" {
@@ -131,13 +130,12 @@ func displayDownload(r speedtest.Result, intervalStart time.Duration) string {
 	sb.WriteString("--------------------------------\n")
 	if !r.Total {
 		sb.WriteString(fmt.Sprintf("between  %.2f seconds and %.2f seconds:\n", intervalStart.Seconds(), (intervalStart.Seconds() + r.Interval.Seconds())))
-		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.2f second(s)\n", float64(r.Bytes)/1000000.0, r.Interval.Seconds()))
+		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.2f second(s)\n", r.MegaBytes(), r.Interval.Seconds()))
 	} else {
 		sb.WriteString("Total Speed\n")
-		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.3f second(s)\n", float64(r.Bytes)/1000000.0, r.Interval.Seconds()))
+		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.3f second(s)\n", r.MegaBytes(), r.Interval.Seconds()))
 	}
-	mbps := r.BytesPerSecond() * (8.0 / 1000000.0)
-	sb.WriteString(fmt.Sprintf("download speed: %.4f Mbps\n", mbps))
+	sb.WriteString(fmt.Sprintf("download speed: %.4f Mbps\n", r.MBitsPerSecond()))
 	return sb.String()
 }
 
@@ -146,12 +144,11 @@ func displayUpload(r speedtest.Result, intervalStart time.Duration) string {
 	sb.WriteString("--------------------------------\n")
 	if !r.Total {
 		sb.WriteString(fmt.Sprintf("between  %.2f seconds and %.2f seconds:\n", intervalStart.Seconds(), (intervalStart.Seconds() + r.Interval.Seconds())))
-		sb.WriteString(fmt.Sprintf("sent %.4f Mb in %.2f second(s)\n", float64(r.Bytes)/1000000.0, r.Interval.Seconds()))
+		sb.WriteString(fmt.Sprintf("sent %.4f Mb in %.2f second(s)\n", r.MegaBytes(), r.Interval.Seconds()))
 	} else {
 		sb.WriteString("Total Speed\n")
-		sb.WriteString(fmt.Sprintf("sent %.4f Mb in %.3f second(s)\n", float64(r.Bytes)/1000000.0, r.Interval.Seconds()))
+		sb.WriteString(fmt.Sprintf("sent %.4f Mb in %.3f second(s)\n", r.MegaBytes(), r.Interval.Seconds()))
 	}
-	mbps := r.BytesPerSecond() * (8.0 / 1000000.0)
-	sb.WriteString(fmt.Sprintf("upload speed: %.4f Mbps\n", mbps))
+	sb.WriteString(fmt.Sprintf("upload speed: %.4f Mbps\n", r.MBitsPerSecond()))
 	return sb.String()
 }

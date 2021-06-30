@@ -24,7 +24,6 @@ func TestDownload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	listener := l.(*net.TCPListener)
 
 	_, serverPort, err := net.SplitHostPort(l.Addr().String())
 	if err != nil {
@@ -40,7 +39,7 @@ func TestDownload(t *testing.T) {
 	stateChan := make(chan state, 2)
 
 	go (func() {
-		err := Serve(listener, 1, killServer, nil)
+		err := Serve(l, 1, killServer, nil)
 		stateChan <- state{err: err}
 	})()
 
@@ -71,13 +70,12 @@ func displayDownload(r Result, intervalStart time.Duration) string {
 	sb.WriteString("--------------------------------\n")
 	if !r.Total {
 		sb.WriteString(fmt.Sprintf("between  %.2f seconds and %.2f seconds:\n", intervalStart.Seconds(), (intervalStart.Seconds() + r.Interval.Seconds())))
-		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.2f second(s)\n", float64(r.Bytes)/1000000.0, r.Interval.Seconds()))
+		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.2f second(s)\n", r.MegaBytes(), r.Interval.Seconds()))
 	} else {
 		sb.WriteString("Total Speed\n")
-		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.3f second(s)\n", float64(r.Bytes)/1000000.0, r.Interval.Seconds()))
+		sb.WriteString(fmt.Sprintf("received %.4f Mb in %.3f second(s)\n", r.MegaBytes(), r.Interval.Seconds()))
 	}
 	// convert bytes per second to megabits per second
-	mbps := r.BytesPerSecond() * (8.0 / 1000000.0)
-	sb.WriteString(fmt.Sprintf("download speed: %.4f Mbps\n", mbps))
+	sb.WriteString(fmt.Sprintf("download speed: %.4f Mbps\n", r.MBitsPerSecond()))
 	return sb.String()
 }

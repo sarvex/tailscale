@@ -23,15 +23,22 @@ const (
 
 // This is the initial message sent to the server, that contains information on how to
 // conduct the test.
-type TestConfig struct {
+type testConfig struct {
 	Version      int           `json:"version"`
 	TestDuration time.Duration `json:"time"`
 }
 
-// This is the response to the TestConfig message. It contains an error that the server
-// has with the TestConfig.
-type TestConfigResponse struct {
+// This is the response to the testConfig message. It contains an error that the server
+// has with the testConfig.
+type testConfigResponse struct {
 	Error string `json:"error,omitempty"`
+}
+
+// TestState is used by the server when checking the result of a test.
+type testState struct {
+	failed  bool
+	err     error
+	results []Result
 }
 
 // This represents the Result of a speedtest within a specific interval
@@ -41,17 +48,10 @@ type Result struct {
 	Total    bool          // if true, this result struct represents the entire test, rather than a segment of the test.
 }
 
-func (r Result) BytesPerSecond() float64 {
-	return float64(r.Bytes) / r.Interval.Seconds()
+func (r Result) MBitsPerSecond() float64 {
+	return (float64(r.Bytes) * 8.0) / (r.Interval.Seconds() * 1000000.0)
 }
 
-func (r Result) BitsPerSecond() float64 {
-	return float64(r.Bytes) * 8.0 / r.Interval.Seconds()
-}
-
-// TestState is used by the server when checking the result of a test.
-type TestState struct {
-	failed  bool
-	err     error
-	results []Result
+func (r Result) MegaBytes() float64 {
+	return float64(r.Bytes) / 1000000.0
 }
