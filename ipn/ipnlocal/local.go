@@ -973,6 +973,30 @@ var removeFromDefaultRoute = []netaddr.IPPrefix{
 	tsaddr.TailscaleULARange(),
 }
 
+// internalAndExternalInterfaces splits interface routes into "internal"
+// and "external" sets. Internal routes are those of virtual ethernet
+// network interfaces used by guest VMs and containers, such as WSL and
+// Docker.
+func internalAndExternalInterfaces() (internal, external []netaddr.IPPrefix, err error) {
+	if err := interfaces.ForeachInterfaceAddress(func(_ interfaces.Interface, pfx netaddr.IPPrefix) {
+		if tsaddr.IsTailscaleIP(pfx.IP()) {
+			return
+		}
+		if pfx.IsSingleIP() {
+			return
+		}
+		if false {
+			internal = append(internal, pfx)
+			return
+		}
+		external = append(external, pfx)
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return internal, external, nil
+}
+
 func interfaceRoutes() (ips *netaddr.IPSet, hostIPs []netaddr.IP, err error) {
 	var b netaddr.IPSetBuilder
 	if err := interfaces.ForeachInterfaceAddress(func(_ interfaces.Interface, pfx netaddr.IPPrefix) {
@@ -2108,12 +2132,11 @@ func (b *LocalBackend) routerConfig(cfg *wgcfg.Config, prefs *ipn.Prefs) *router
 		if !default6 {
 			rs.Routes = append(rs.Routes, ipv6Default)
 		}
+		internalIPs, externalIPs, err := internalAndExternalInterfaces()
+		if err != nil {
+			b.logf("failed to discover interface ips: %v", err)
+		}
 		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
-			// Only allow local lan access on linux machines for now.
-			ips, _, err := interfaceRoutes()
-			if err != nil {
-				b.logf("failed to discover interface ips: %v", err)
-			}
 			if prefs.ExitNodeAllowLANAccess {
 				rs.LocalRoutes = ips.Prefixes()
 			} else {
