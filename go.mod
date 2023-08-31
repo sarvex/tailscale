@@ -32,7 +32,7 @@ require (
 	github.com/golangci/golangci-lint v1.52.2
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-containerregistry v0.14.0
-	github.com/google/nftables v0.1.1-0.20230115205135-9aa6fdf5a28c
+	github.com/google/nftables v0.1.1-0.20230803061423-d27cc52f157d
 	github.com/google/uuid v1.3.0
 	github.com/goreleaser/nfpm/v2 v2.32.1-0.20230803123630-24a43c5ad7cf
 	github.com/hdevalence/ed25519consensus v0.1.0
