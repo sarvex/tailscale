@@ -483,6 +483,8 @@ github.com/goreleaser/fileglob v1.3.0 h1:/X6J7U8lbDpQtBvGcwwPS6OpzkNVlVEsFUVRx9+
 github.com/goreleaser/fileglob v1.3.0/go.mod h1:Jx6BoXv3mbYkEzwm9THo7xbr5egkAraxkGorbJb4RxU=
 github.com/goreleaser/nfpm/v2 v2.32.1-0.20230803123630-24a43c5ad7cf h1:X8rzot0Te1TYSoADyMZfPt95Afhptpj0VqicKPAcmjM=
 github.com/goreleaser/nfpm/v2 v2.32.1-0.20230803123630-24a43c5ad7cf/go.mod h1:Z7rAxucnQGMGfAhpxm/UIrdH0/EcxEt91RW3mmVzx2U=
+github.com/goreleaser/nfpm/v2 v2.32.1-0.20230816021110-b50fc3af8cd0 h1:ZT4le478lSZOXWND6xBk9+/lIRZZkJBlO05p0o/3soY=
+github.com/goreleaser/nfpm/v2 v2.32.1-0.20230816021110-b50fc3af8cd0/go.mod h1:Z7rAxucnQGMGfAhpxm/UIrdH0/EcxEt91RW3mmVzx2U=
 github.com/gorilla/csrf v1.7.1 h1:Ir3o2c1/Uzj6FBxMlAUB6SivgVMy1ONXwYgXn+/aHPE=
 github.com/gorilla/csrf v1.7.1/go.mod h1:+a/4tCmqhG6/w4oafeAZ9pEa3/NZOWYVbD9fV0FwIQA=
 github.com/gorilla/securecookie v1.1.1 h1:miw7JPhV+b/lAHSXz4qd/nN9jRiAFV5FwjeKyCS8BvQ=
