@@ -38,7 +38,7 @@ require (
 	github.com/hdevalence/ed25519consensus v0.1.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/illarion/gonotify v1.0.1
-	github.com/insomniacslk/dhcp v0.0.0-20230407062729-974c6f05fe16
+	github.com/insomniacslk/dhcp v0.0.0-20230830143216-01274d66fc98
 	github.com/josharian/native v1.1.1-0.20230202152459-5c7d0dd6ab86
 	github.com/jsimonetti/rtnetlink v1.3.2
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
