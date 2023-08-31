@@ -6,10 +6,10 @@ updates:
   ## stable release, pull in all changes, and close it again so that
   ## the tree remains more stable during development and the upstream
   ## changes have time to soak before the next release.
-  # - package-ecosystem: "gomod"
-  #   directory: "/"
-  #   schedule:
-  #     interval: "daily"
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
   #   commit-message:
   #     prefix: "go.mod:"
   #   open-pull-requests-limit: 100
