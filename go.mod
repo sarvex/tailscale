@@ -81,8 +81,8 @@ require (
 	golang.org/x/net v0.14.0
 	golang.org/x/oauth2 v0.7.0
 	golang.org/x/sync v0.2.0
-	golang.org/x/sys v0.11.0
-	golang.org/x/term v0.11.0
+	golang.org/x/sys v0.12.0
+	golang.org/x/term v0.12.0
 	golang.org/x/time v0.3.0
 	golang.org/x/tools v0.9.1
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2
