@@ -19,7 +19,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/creack/pty v1.1.18
 	github.com/dave/jennifer v1.6.1
-	github.com/dblohm7/wingoes v0.0.0-20230830181946-9e486725665f
+	github.com/dblohm7/wingoes v0.0.0-20240112174850-6c64141b7297
 	github.com/dsnet/try v0.0.3
 	github.com/evanw/esbuild v0.14.53
 	github.com/frankban/quicktest v1.14.5
@@ -66,7 +66,7 @@ require (
 	github.com/tailscale/mkctr v0.0.0-20220601142259-c0b937af2e89
 	github.com/tailscale/netlink v1.1.1-0.20211101221916-cabfb018fe85
 	github.com/tailscale/wireguard-go v0.0.0-20230824215414-93bd5cbf7fd8
-	github.com/tc-hib/winres v0.2.0
+	github.com/tc-hib/winres v0.2.1
 	github.com/tcnksm/go-httpstat v0.2.0
 	github.com/toqueteos/webbrowser v1.2.0
 	github.com/u-root/u-root v0.11.0
@@ -338,8 +338,8 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230425010034-47ecfdc1ba53 // indirect
-	golang.org/x/image v0.7.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/image v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
