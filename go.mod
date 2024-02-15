@@ -23,7 +23,7 @@ require (
 	github.com/dsnet/try v0.0.3
 	github.com/evanw/esbuild v0.14.53
 	github.com/frankban/quicktest v1.14.5
-	github.com/fxamacker/cbor/v2 v2.4.0
+	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/go-json-experiment/json v0.0.0-20230321051131-ccbac49a6929
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-ole/go-ole v1.2.6
