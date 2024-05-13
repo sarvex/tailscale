@@ -93,7 +93,7 @@ jobs:
       # We cannot use v4, as it requires a newer glibc version than some of the
       # tested images provide. See
       # https://github.com/actions/checkout/issues/1487
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: run installer
       run: scripts/installer.sh
       # Package installation can fail in docker because systemd is not running
